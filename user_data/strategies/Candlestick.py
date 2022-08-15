@@ -1,6 +1,6 @@
 # --- Do not remove these libs ---
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 from freqtrade.strategy import IStrategy
 from pandas import DataFrame
 import talib.abstract as ta
@@ -13,7 +13,7 @@ from support import identify_df_trends
 
 
 class Candlestick(IStrategy):
-    cache = {}
+    cache: Any = {}
 
     INTERFACE_VERSION: int = 3
     process_only_new_candles: bool = False
@@ -44,17 +44,19 @@ class Candlestick(IStrategy):
             return proposed_stake
         return self.wallets.get_total_stake_amount() * .06
 
-
-    def get_trend(self, df: DataFrame, metadata: dict):
+    def get_trend(self, dataframe: DataFrame, metadata: dict):
         pair = metadata['pair']
-        prev = self.cache.get(pair,  { 'count': 0, 'trend': 0})
+        prev = self.cache.get(pair,  {'count': 0, 'trend': 0})
 
         if ((prev['count'] == 0) | (prev['count'] > 10)):
-            df = identify_df_trends(df, 'close')
+            df = identify_df_trends(dataframe, 'close', window_size=3)
             self.cache[pair] = {'count': 1, 'trend': df['Trend']}
         else:
-            self.cache[pair] = { 'count': prev['count'] + 1 if prev['count'] < 10 else 0, 'trend': prev['trend']}
-            df['Trend'] = prev['trend']
+            self.cache[pair] = {
+                'count': prev['count'] + 1 if prev['count'] < 10 else 0,
+                'trend': prev['trend']
+            }
+            dataframe['Trend'] = prev['trend']
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         self.get_trend(dataframe, metadata)

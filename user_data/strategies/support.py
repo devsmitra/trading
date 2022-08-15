@@ -1,6 +1,5 @@
 import numpy as np
 from statistics import mean
-import string
 
 
 def support(df, index, n1, n2, col):  # n1 n2 before and after candle index
@@ -169,5 +168,5 @@ def identify_df_trends(df, column, window_size=5):
     for down_trend in down_trends:
         for index, row in df[down_trend['from']:down_trend['to']].iterrows():
             df.loc[index, 'Trend'] = -1
-            
+
     return df
