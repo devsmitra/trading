@@ -13,6 +13,8 @@ from support import identify_df_trends
 
 
 class Candlestick(IStrategy):
+    cache = {}
+
     INTERFACE_VERSION: int = 3
     process_only_new_candles: bool = False
     # Optimal timeframe for the strategy
@@ -42,10 +44,21 @@ class Candlestick(IStrategy):
             return proposed_stake
         return self.wallets.get_total_stake_amount() * .06
 
+
+    def get_trend(self, df: DataFrame, metadata: dict):
+        pair = metadata['pair']
+        prev = self.cache.get(pair,  { 'count': 0, 'trend': 0})
+
+        if ((prev['count'] == 0) | (prev['count'] > 10)):
+            df = identify_df_trends(df, 'close')
+            self.cache[pair] = {'count': 1, 'trend': df['Trend']}
+        else:
+            self.cache[pair] = { 'count': prev['count'] + 1 if prev['count'] < 10 else 0, 'trend': prev['trend']}
+            df['Trend'] = prev['trend']
+
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        identify_df_trends(dataframe, 'close')
+        self.get_trend(dataframe, metadata)
         dataframe['adx'] = ta.ADX(dataframe, timeperiod=14)
-        dataframe['trend'] = ta.SMA(dataframe, timeperiod=8)
         return dataframe
 
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:

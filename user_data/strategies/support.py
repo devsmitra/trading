@@ -161,17 +161,13 @@ def identify_df_trends(df, column, window_size=5):
         results[obj['name']] = trends
 
     up_trends = get_up_trend(results)
-
-    labels = [letter for letter in string.ascii_uppercase[:len(up_trends)]]
-    for up_trend, label in zip(up_trends, labels):
+    for up_trend in up_trends:
         for index, row in df[up_trend['from']:up_trend['to']].iterrows():
             df.loc[index, 'Trend'] = 1
 
     down_trends = get_down_trend(results)
-
-    labels = [letter for letter in string.ascii_uppercase[:len(down_trends)]]
-
-    for down_trend, label in zip(down_trends, labels):
+    for down_trend in down_trends:
         for index, row in df[down_trend['from']:down_trend['to']].iterrows():
             df.loc[index, 'Trend'] = -1
+            
     return df
