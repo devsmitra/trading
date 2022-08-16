@@ -48,12 +48,12 @@ class Candlestick(IStrategy):
         pair = metadata['pair']
         prev = self.cache.get(pair,  {'count': 0, 'trend': 0})
 
-        if ((prev['count'] == 0) | (prev['count'] > 10)):
+        if ((prev['count'] == 0) | (prev['count'] > 8)):
             df = identify_df_trends(dataframe, 'close', window_size=3)
             self.cache[pair] = {'count': 1, 'trend': df['Trend']}
         else:
             self.cache[pair] = {
-                'count': prev['count'] + 1 if prev['count'] < 10 else 0,
+                'count': prev['count'] + 1 if prev['count'] < 8 else 0,
                 'trend': prev['trend']
             }
             dataframe['Trend'] = prev['trend']
@@ -66,12 +66,8 @@ class Candlestick(IStrategy):
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
-                (qtpylib.crossed_above(dataframe['adx'], 20) & (dataframe['Trend'] == 1)) |
-                (
-                    qtpylib.crossed_above(dataframe['Trend'], 0) &
-                    (dataframe['adx'] > 20) &
-                    (dataframe['adx'] < 50)
-                )
+                qtpylib.crossed_above(dataframe['Trend'], 0) &
+                (dataframe['adx'] > 20)
             ),
             'enter_long'] = 1
         return dataframe
