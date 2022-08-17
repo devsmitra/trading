@@ -11,15 +11,15 @@
   "trading_mode": "spot",
   "margin_mode": "",
   "unfilledtimeout": {
-    "entry": 15,
-    "exit": 15,
+    "entry": 5,
+    "exit": 5,
     "exit_timeout_count": 0,
     "unit": "minutes"
   },
   "entry_pricing": {
     "price_side": "same",
     "use_order_book": true,
-    "order_book_top": 2,
+    "order_book_top": 1,
     "price_last_balance": 0.0,
     "check_depth_of_market": {
       "enabled": false,
@@ -43,7 +43,7 @@
   "pairlists": [
     {
       "method": "VolumePairList",
-      "number_assets": 40,
+      "number_assets": 100,
       "sort_key": "quoteVolume",
       "min_value": 0,
       "refresh_period": 1800
