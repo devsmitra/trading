@@ -18,7 +18,7 @@ class Candlestick(IStrategy):
     INTERFACE_VERSION: int = 3
     process_only_new_candles: bool = False
     # Optimal timeframe for the strategy
-    timeframe = '1h'
+    timeframe = '5m'
 
     minimal_roi = {
         "0": 1
@@ -46,18 +46,14 @@ class Candlestick(IStrategy):
 
     def get_trend(self, dataframe: DataFrame, metadata: dict):
         pair = metadata['pair']
-        prev = self.cache.get(pair,  {'count': 0, 'trend': 0})
-
-        if ((prev['count'] == 0) | (prev['count'] > 8)):
+        prev = self.cache.get(pair,  {'date': dataframe.iloc[-2]['date'], 'Trend': 0})
+        date = dataframe.iloc[-1]['date']
+        if (date != prev['date']):
             df = identify_df_trends(dataframe, 'close', window_size=3)
-            self.cache[pair] = {'count': 1, 'trend': df['Trend']}
+            self.cache[pair] = {'date': date, 'Trend': df['Trend']}
         else:
-            self.cache[pair] = {
-                'count': prev['count'] + 1 if prev['count'] < 8 else 0,
-                'trend': prev['trend']
-            }
-            dataframe['Trend'] = prev['trend']
-
+            dataframe['Trend'] = prev['Trend']
+    
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         self.get_trend(dataframe, metadata)
         dataframe['adx'] = ta.ADX(dataframe, timeperiod=14)
@@ -76,7 +72,8 @@ class Candlestick(IStrategy):
         dataframe.loc[
             (
                 (qtpylib.crossed_below(dataframe['adx'], 25) & (dataframe['Trend'] == -1)) |
-                (qtpylib.crossed_below(dataframe['Trend'], 0) & (dataframe['adx'] < 25))
+                (qtpylib.crossed_below(dataframe['Trend'], 0) & (dataframe['adx'] < 25)) |
+                (qtpylib.crossed_below(dataframe.shift()['Trend'], 0) & (dataframe['adx'] < 25))
             ),
             'exit_long'] = 1
         return dataframe
