@@ -70,7 +70,7 @@ class Candlestick(IStrategy):
             qtpylib.crossed_above(dataframe['Trend_5m'], 0) &
             (dataframe['adx_5m'] > 20)
         )
-        for i in range(1, 3):
+        for i in range(1, 6):
             crossed = crossed | (qtpylib.crossed_above(dataframe.shift(i)['Trend_5m'], 0) & (dataframe.shift(i)['adx_5m'] > 20))
 
         dataframe.loc[
