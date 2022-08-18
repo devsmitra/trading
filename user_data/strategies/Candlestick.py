@@ -66,11 +66,8 @@ class Candlestick(IStrategy):
         return dataframe
 
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        crossed = (
-            qtpylib.crossed_above(dataframe['Trend_5m'], 0) &
-            (dataframe['adx_5m'] > 20)
-        )
-        for i in range(1, 6):
+        crossed = False
+        for i in range(0, 7):
             crossed = crossed | (qtpylib.crossed_above(dataframe.shift(i)['Trend_5m'], 0) & (dataframe.shift(i)['adx_5m'] > 20))
 
         dataframe.loc[
