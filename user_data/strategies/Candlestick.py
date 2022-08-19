@@ -18,7 +18,7 @@ class Candlestick(IStrategy):
     INTERFACE_VERSION: int = 3
     process_only_new_candles: bool = False
     # Optimal timeframe for the strategy
-    timeframe = '1m'
+    timeframe = '15m'
 
     minimal_roi = {
         "0": 1
@@ -28,11 +28,11 @@ class Candlestick(IStrategy):
     stoploss = -0.05
     use_custom_stoploss = True
 
-    @informative('5m')
-    def populate_indicators_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        dataframe['adx'] = ta.ADX(dataframe, timeperiod=14)
-        self.get_trend(dataframe, metadata)
-        return dataframe
+    # @informative('5m')
+    # def populate_indicators_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    #     dataframe['adx'] = ta.ADX(dataframe, timeperiod=14)
+    #     self.get_trend(dataframe, metadata)
+    #     return dataframe
 
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
                         current_rate: float, current_profit: float, **kwargs) -> float:
@@ -61,14 +61,14 @@ class Candlestick(IStrategy):
             dataframe['Trend'] = prev['Trend']
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        # self.get_trend(dataframe, metadata)
-        # dataframe['adx'] = ta.ADX(dataframe, timeperiod=14)
+        self.get_trend(dataframe, metadata)
+        dataframe['adx'] = ta.ADX(dataframe, timeperiod=14)
         return dataframe
 
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         crossed = False
-        for i in range(0, 6):
-            crossed = crossed | (qtpylib.crossed_above(dataframe.shift(i)['Trend_5m'], 0) & (dataframe.shift(i)['adx_5m'] > 20))
+        for i in range(0, 2):
+            crossed = crossed | (qtpylib.crossed_above(dataframe.shift(i)['Trend'], 0) & (dataframe.shift(i)['adx'] > 20))
 
         dataframe.loc[
             crossed,
@@ -79,9 +79,9 @@ class Candlestick(IStrategy):
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         dataframe.loc[
             (
-                (qtpylib.crossed_below(dataframe['adx_5m'], 25) & (dataframe['Trend_5m'] == -1)) |
-                (qtpylib.crossed_below(dataframe['Trend_5m'], 0) & (dataframe['adx_5m'] < 25)) |
-                (qtpylib.crossed_below(dataframe.shift()['Trend_5m'], 0) & (dataframe['adx_5m'] < 25))
+                (qtpylib.crossed_below(dataframe['adx'], 25) & (dataframe['Trend'] == -1)) |
+                (qtpylib.crossed_below(dataframe['Trend'], 0) & (dataframe['adx'] < 25)) |
+                (qtpylib.crossed_below(dataframe.shift()['Trend'], 0) & (dataframe['adx'] < 25))
             ),
             'exit_long'] = 1
         return dataframe
