@@ -11,7 +11,7 @@
   "trading_mode": "spot",
   "margin_mode": "",
   "unfilledtimeout": {
-    "entry": 11,
+    "entry": 20,
     "exit": 5,
     "exit_timeout_count": 0,
     "unit": "minutes"
