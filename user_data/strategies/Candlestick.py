@@ -1,7 +1,7 @@
 # --- Do not remove these libs ---
 from datetime import datetime
 from typing import Any, Optional
-from freqtrade.strategy import IStrategy, informative
+from freqtrade.strategy import IStrategy, stoploss_from_absolute
 from pandas import DataFrame
 import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib
@@ -36,11 +36,15 @@ class Candlestick(IStrategy):
 
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
                         current_rate: float, current_profit: float, **kwargs) -> float:
+        def get_stoploss(atr):
+            dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+            candle = dataframe.iloc[-1].squeeze()   
+            return stoploss_from_absolute(current_rate - (candle['atr'] * atr), current_rate, is_short=trade.is_short) * -1
         if current_profit > 0.075:
-            return -.025
+            return get_stoploss(1)
         if current_profit > 0.05:
-            return -.05
-        return -.1
+            return get_stoploss(2)
+        return get_stoploss(6)
 
     def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
                             proposed_stake: float, min_stake: Optional[float], max_stake: float,
@@ -55,7 +59,7 @@ class Candlestick(IStrategy):
         prev = self.cache.get(pair,  {'date': dataframe.iloc[-2]['date'], 'Trend': 0})
         date = dataframe.iloc[-1]['date']
         if (date != prev['date']):
-            df = identify_df_trends(dataframe, 'close', window_size=3)
+            df = identify_df_trends(dataframe, 'close', window_size=5)
             self.cache[pair] = {'date': date, 'Trend': df['Trend']}
         else:
             dataframe['Trend'] = prev['Trend']
@@ -63,12 +67,16 @@ class Candlestick(IStrategy):
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         self.get_trend(dataframe, metadata)
         dataframe['adx'] = ta.ADX(dataframe, timeperiod=14)
+        dataframe['atr'] = ta.ATR(dataframe)
         return dataframe
 
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         crossed = False
         for i in range(0, 2):
-            crossed = crossed | (qtpylib.crossed_above(dataframe.shift(i)['Trend'], 0) & (dataframe.shift(i)['adx'] > 20))
+            crossed = crossed | (
+                qtpylib.crossed_above(dataframe.shift(i)['Trend'], 0) &
+                (dataframe.shift(i)['adx'] > 20)
+            )
 
         dataframe.loc[
             crossed,
