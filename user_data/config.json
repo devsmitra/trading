@@ -92,7 +92,7 @@
     "verbosity": "error",
     "enable_openapi": false,
     "jwt_secret_key": "e4e3a8a36f04811688e560c2b9d7712fb11738c3d63d4687e789ac57afd408e6",
-    "CORS_origins": [],
+    "CORS_origins": ["localhost:3000"],
     "username": "freqtrade",
     "password": "freqtrade"
   },
