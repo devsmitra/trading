@@ -25,26 +25,20 @@ class Candlestick(IStrategy):
     }
 
     # Optimal stoploss designed for the strategy
-    stoploss = -0.05
+    stoploss = -0.1
     use_custom_stoploss = True
-
-    # @informative('5m')
-    # def populate_indicators_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-    #     dataframe['adx'] = ta.ADX(dataframe, timeperiod=14)
-    #     self.get_trend(dataframe, metadata)
-    #     return dataframe
 
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
                         current_rate: float, current_profit: float, **kwargs) -> float:
+        sl = 4.1
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+        candle = dataframe.iloc[-1].squeeze()   
         def get_stoploss(atr):
-            dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
-            candle = dataframe.iloc[-1].squeeze()   
-            return stoploss_from_absolute(current_rate - (candle['atr'] * atr), current_rate, is_short=trade.is_short) * -1
-        if current_profit > 0.075:
-            return get_stoploss(1)
-        if current_profit > 0.05:
-            return get_stoploss(2)
-        return get_stoploss(6)
+            return stoploss_from_absolute(current_rate - (candle['atr'] * atr), current_rate, is_short=trade.is_short)
+
+        if current_rate > (trade.open_rate + (candle['atr'] * 1.5 * sl)):
+            return -.0001
+        return get_stoploss(sl) * -1
 
     def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float,
                             proposed_stake: float, min_stake: Optional[float], max_stake: float,
