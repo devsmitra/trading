@@ -53,6 +53,8 @@ RUN pip install -e . --user --no-cache-dir --no-build-isolation \
   && mkdir /freqtrade/user_data/ \
   && freqtrade install-ui
 
+EXPOSE 8080
+
 ENTRYPOINT ["freqtrade"]
 # Default to trade mode
-CMD [ "trade" ]
+CMD [ "trade", "--strategy", "MACD" ]

@@ -31,19 +31,38 @@
     "use_order_book": true,
     "order_book_top": 1
   },
+  "order_types": {
+    "buy": "limit",
+    "sell": "limit",
+    "emergencysell": "market",
+    "stoploss": "market",
+    "stoploss_on_exchange": true,
+    "stoploss_on_exchange_interval": 60
+  },
   "exchange": {
     "name": "binance",
     "key": "",
     "secret": "",
     "ccxt_config": {},
     "ccxt_async_config": {},
-    "pair_whitelist": [],
+    "pair_whitelist": [
+      "BTC/BUSD",
+      "ETH/BUSD",
+      "BNB/BUSD",
+      "ADA/BUSD",
+      "XRP/BUSD",
+      "DOT/BUSD",
+      "UNI/BUSD",
+      "LTC/BUSD",
+      "LINK/BUSD",
+      "SOL/BUSD"
+    ],
     "pair_blacklist": []
   },
   "pairlists": [
     {
       "method": "VolumePairList",
-      "number_assets": 40,
+      "number_assets": 60,
       "sort_key": "quoteVolume",
       "min_value": 0,
       "refresh_period": 1800
@@ -92,7 +111,7 @@
     "verbosity": "error",
     "enable_openapi": false,
     "jwt_secret_key": "e4e3a8a36f04811688e560c2b9d7712fb11738c3d63d4687e789ac57afd408e6",
-    "CORS_origins": ["localhost:3000"],
+    "CORS_origins": [],
     "username": "freqtrade",
     "password": "freqtrade"
   },
