@@ -62,14 +62,14 @@
   "pairlists": [
     {
       "method": "VolumePairList",
-      "number_assets": 24,
+      "number_assets": 40,
       "sort_key": "quoteVolume",
       "min_value": 0,
       "refresh_period": 1800
     },
     {
       "method": "AgeFilter",
-      "min_days_listed": 2
+      "min_days_listed": 5
     },
     {
       "method": "RangeStabilityFilter",

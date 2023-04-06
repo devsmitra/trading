@@ -327,31 +327,8 @@ def Nadaraya_Watson(df, loop_back = 8):
     # yhat22, _ = kernel_regression(src, size, h-lag)
 
     yhat11.reverse()
-    # yhat22.reverse()
-    # sum_es.reverse()
-
-    # mult = 3
-    # mae1 = sum_e/size*(mult*2)
-    # mae2 = sum_e/size*(mult+1)
-    # print(sum_es)
-    # up =[nan] * size
-    # dn =[nan] * size
-    # for i in range(size-1):
-    #     mae1 = sum_es[i]/size*(mult*4)
-    #     mae2 = sum_es[i]/size*(mult*2)
-    #     y1 = yhat11[i]
-    #     y2 = yhat11[i+1]
-    #     up[i] = y1 + mae1
-    #     dn[i] = y2 - mae2
-
     yhat1 = pd.Series(yhat11)
-    # yhat2 = pd.Series(yhat22)
-    # up = pd.Series(up)
-    # dn = pd.Series(dn)
 
     return {
         'yhat': yhat1,
-        # 'yhat2': yhat2,
-        # 'up': up,
-        # 'dn': dn,
     }
