@@ -224,63 +224,56 @@ def poki(df):
 
 # ---------------
 
-def Nadaraya_Watson_Envelope(df):
-    length = 100
-    h = 8
-    mult = 3
-    src =  df['close']
+# def Nadaraya_Watson_Envelope(df):
+#     input = df['close']
+#     src = input.copy()
+#     src = src.loc[::-1].reset_index(drop=True)
+#     # Settings
+#     h = 8
+#     r = 8
+#     x_0 = 25
+#     lag = 2
+#     size = len(src)
+#     def _kernel_regression(_src, _size, _h):
+#         # yhat = [nan] * (x_0 + lag)
+#         yhat = []
+#         sum_es = []
+#         sum_e = 0
+#         for i in range(_size - (x_0 + lag)):
+#             _currentWeight = 0.
+#             _cumulativeWeight = 0.
+#             for j in range(i, i + x_0 + lag):
+#                 y = _src[j] 
+#                 w = math.pow(1 + (math.pow(i-j, 2) / ((math.pow(_h, 2) * 2 * r))), -r)
+#                 _currentWeight += (y * w)
+#                 _cumulativeWeight += w
+#             y2 = _currentWeight / _cumulativeWeight
+#             sum_e += abs(src[i] - y2)
+#             yhat.append(y2)
+#             sum_es.append(sum_e)
 
-    n = np.arange(len(src))
-    k = 2
-    upper = []
-    lower = []
+#         for i in range((x_0 + lag)):
+#             yhat.append(nan)
+#             sum_es.append(nan)
+#         return yhat, sum_es
 
-    for i in range(length//(k-1)):
-        upper.append(np.nan)
-        lower.append(np.nan)
+#     # Estimations
+#     yhat11, sum_es = _kernel_regression(src, size, h)
 
-    up = np.full(len(src), np.nan)
-    dn = np.full(len(src), np.nan)
+#     yhat11.reverse()
+#     sum_es.reverse()
 
-    cross_up = 0
-    cross_dn = 0
+#     yhat1 = pd.Series(yhat11)
+#     mae = sum_es[-1]
+#     cross_up = yhat1 + mae
+#     cross_dn = yhat1 - mae
 
-    y = []
-    sum_e = 0
-    
-    for i in range(length):
-        sum_w = 0
-        sum_y = 0
-        for j in range(length):
-            w = math.exp(-((i-j)**2)/(h**2*2))
-            sum_w += w
-            sum_y += src[j]*w
-        y2 = sum_y/sum_w
-        sum_e += abs(src[i] - y2)
-        y.append(y2)
-        
-    mae = sum_e/length*mult
-    
-    for i in range(1, length):
-        y2 = y[i]
-        y1 = y[i-1]
-        up[i] = upper[i//k]
-        dn[i] = lower[i//k]
-        
-        up[i-k+1:i+1] = [y1+mae]*k
-        dn[i-k+1:i+1] = [y1-mae]*k
-        
-        # if src[i] > y1 + mae and src[i+1] < y1 + mae:
-        #     # plt.text(n[-i], src[i], '▼', color=dn_col, ha='center', va='center')
-        # if src[i] < y1 - mae and src[i+1] > y1 - mae:
-            # plt.text(n[-i], src[i], '▲', color=up_col, ha='center', va='center')
-            
-    cross_up = y[0] + mae
-    cross_dn = y[0] - mae
-    return {
-        'up': cross_up,
-        'dn': cross_dn
-    }
+#     print(cross_up)
+
+#     return {
+#         'up': cross_up,
+#         'dn': cross_dn
+#     }
 
 def smma(df, timeperiod = 32):
     df['ma'] = ta.SMA(df, timeperiod=timeperiod)
@@ -288,8 +281,8 @@ def smma(df, timeperiod = 32):
     return smma
 
 
-def Nadaraya_Watson(df, loop_back = 8):
-    src = df['close'].copy()
+def kernel_regression(input, loop_back = 8):
+    src = input.copy()
     src = src.loc[::-1].reset_index(drop=True)
     # Settings
     h = loop_back
@@ -299,8 +292,7 @@ def Nadaraya_Watson(df, loop_back = 8):
     size = len(src)
     smoothColors = False
 
-    def kernel_regression(_src, _size, _h):
-        # yhat = [nan] * (x_0 + lag)
+    def _kernel_regression(_src, _size, _h):
         yhat = []
         sum_es = []
         sum_e = 0
@@ -323,12 +315,82 @@ def Nadaraya_Watson(df, loop_back = 8):
         return yhat, sum_es
 
     # Estimations
-    yhat11, sum_es = kernel_regression(src, size, h)
-    # yhat22, _ = kernel_regression(src, size, h-lag)
+    yhat11, sum_es = _kernel_regression(src, size, h)
+    yhat11.reverse()
+    return pd.Series(yhat11)
+
+
+def gaussian_regression(input, loop_back = 8):
+    src = input.copy()
+    src = src.loc[::-1].reset_index(drop=True)
+    # Settings
+    h = loop_back
+    r = 8
+    x_0 = 25
+    lag = 2
+    size = len(src)
+    
+    def _gaussian_regression(_src, _size, _h):
+        yhat = []
+        sum_e = 0
+        for i in range(_size - (x_0 + lag)):
+            _currentWeight = 0.
+            _cumulativeWeight = 0.
+            for j in range(i, i + x_0 + lag):
+                y = _src[j] 
+                w = math.exp(-math.pow(i-j, 2) / (2 * math.pow(_h, 2)))
+                _currentWeight += (y * w)
+                _cumulativeWeight += w
+            y2 = _currentWeight / _cumulativeWeight
+            sum_e += abs(src[i] - y2)
+            yhat.append(y2)
+
+        for i in range((x_0 + lag)):
+            yhat.append(nan)
+        return yhat
+
+    # Estimations
+    yhat11 = _gaussian_regression(src, size, h)
 
     yhat11.reverse()
     yhat1 = pd.Series(yhat11)
+    return yhat1
 
-    return {
-        'yhat': yhat1,
-    }
+
+
+
+
+def locally_periodic(input, loop_back = 8, _period=24):
+    src = input.copy()
+    src = src.loc[::-1].reset_index(drop=True)
+    # Settings
+    h = loop_back
+    r = 8
+    x_0 = 25
+    lag = 2
+    size = len(src)
+    
+    def _locally_periodic(_src, _size, _h):
+        yhat = []
+        sum_e = 0
+        for i in range(_size - (x_0 + lag)):
+            _currentWeight = 0.
+            _cumulativeWeight = 0.
+            for j in range(i, i + x_0 + lag):
+                y = _src[j] 
+                w = math.exp(-2*math.pow(math.sin(math.pi * (i-j) / _period), 2) / math.pow(_h, 2)) * math.exp(-math.pow(i-j, 2) / (2 * math.pow(_h, 2)))
+                _currentWeight += (y * w)
+                _cumulativeWeight += w
+            y2 = _currentWeight / _cumulativeWeight
+            sum_e += abs(src[i] - y2)
+            yhat.append(y2)
+
+        for i in range((x_0 + lag)):
+            yhat.append(nan)
+        return yhat
+
+    yhat11 = _locally_periodic(src, size, h)
+
+    yhat11.reverse()
+    yhat1 = pd.Series(yhat11)
+    return yhat1
