@@ -15,9 +15,8 @@ class NadarayaWatson(IStrategy):
     minimal_roi = { "0":  1 }
 
     # Optimal stoploss designed for the strategy
-    sl = 2.4
     stoploss = -0.1
-    use_custom_stoploss = False
+    use_custom_stoploss = True
 
     # Optimal timeframe for the strategy
     timeframe = '1h'
@@ -33,12 +32,12 @@ class NadarayaWatson(IStrategy):
         return self.wallets.get_total_stake_amount() * .06
 
     def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
-        df['kr'] = indicators.kernel_regression(df['close'], loop_back=32)
+        df['kr'] = indicators.kernel_regression(df['close'], loop_back=24)
         df['gr'] = indicators.gaussian_regression(df['close'], loop_back=8)
         # df['lp'] = indicators.locally_periodic(df['close'], loop_back=8)
         df['ema'] = indicators.smma(df, timeperiod=32)
-        df['atr'] = ta.ATR(df, timeperiod=14)
-        df['gr_atr'] = indicators.gaussian_regression(df['atr'], loop_back=8)
+        # df['atr'] = ta.ATR(df, timeperiod=14)
+        # df['gr_atr'] = indicators.gaussian_regression(df['atr'], loop_back=8)
         return df
 
     def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
@@ -46,6 +45,7 @@ class NadarayaWatson(IStrategy):
         df.loc[
             (
                 ((df['close'].diff() / df['close'])  < 0.05) &
+                (df['gr'].shift(1) < df['gr']) &
                 (
                     (
                         (df['close'] > df['ema']) &
@@ -55,17 +55,6 @@ class NadarayaWatson(IStrategy):
                         (df['kr'] < df['gr'])
                     )
                 )
-
-                # (df['atr'] > df['gr_atr']) &
-                # (
-                #     (
-                #         qtpylib.crossed_above(df['gr'], df['gr'].shift(1)) &
-                #         (df['kr'] > df['kr'].shift(1))
-                #     ) | (
-                #         qtpylib.crossed_above(df['kr'], df['kr'].shift(1)) &
-                #         (df['gr'] > df['gr'].shift(1))
-                #     )
-                # )
             ),
             'enter_long'
         ] = 1
@@ -82,7 +71,7 @@ class NadarayaWatson(IStrategy):
                            rate: float, time_in_force: str, exit_reason: str,
                            current_time: datetime, **kwargs) -> bool:
         profit = trade.calc_profit_ratio(rate)
-        if (((exit_reason == 'force_exit')) and (profit < 0.01)):
+        if (exit_reason == 'force_exit'):
             return False
         if pair in self.custom_info:
             del self.custom_info[pair]
@@ -102,39 +91,29 @@ class NadarayaWatson(IStrategy):
                 'last_candle': last_candle,
                 'sl': trade.open_rate - diff,
                 'pt': trade.open_rate + (diff * 1.5),
-                'diff': diff
+                'diff': diff,
+                'open_rate': trade.open_rate,
             }
 
         last_candle = self.custom_info[pair]
         return last_candle
 
-    def custom_exit(self, pair: str, trade: Trade, current_time: 'datetime',
-                    current_rate: float, current_profit: float, **kwargs):
-
-        candle = self.trade_candle(pair, trade, current_rate)
-        pt = candle['pt']
-        if (pt < current_rate):
-            return 'Profit Booked'
-
-        # break_even = trade.open_rate + candle['diff']
-        # if (break_even < current_rate):
-        #     candle['sl'] = trade.open_rate + (candle['diff'] * 0.1)
-
-        sl = candle['sl']
-        if (sl > current_rate):
-            return 'Stop Loss Hit'
-
     def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
                     current_rate: float, current_profit: float, **kwargs) -> float:
         candle = self.trade_candle(pair, trade, current_rate)
-        def get_stoploss(atr):
-            return stoploss_from_absolute(
-                current_rate - (candle['atr'] * atr), 
-                current_rate, 
-                is_short=trade.is_short
-            ) * -1
+        
+        def get_percent(up, dn):
+            return (dn - up) / up # get -ve value
 
-        pt = trade.open_rate + (candle['atr'] * self.sl)
-        if (pt < current_rate):
-            return get_stoploss(self.sl/2)
-        return 1
+        if (candle['pt'] < current_rate):
+            candle['open_rate'] = current_rate
+            gap = (candle['diff'] * 0.5)
+            candle['sl'] = current_rate - gap
+            candle['pt'] = current_rate + gap
+
+        break_even = candle['open_rate'] + candle['diff']
+        if (break_even < current_rate):
+            candle['open_rate'] = current_rate 
+            candle['sl'] = candle['open_rate'] - (candle['diff'] * 0.9)
+
+        return get_percent(current_rate, candle['sl'])
