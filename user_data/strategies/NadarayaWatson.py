@@ -85,8 +85,9 @@ class NadarayaWatson(IStrategy):
             # diff = last_candle['atr'] * self.sl
 
             # Swing Low Stoploss
-            diff = (trade.open_rate - df['low'].rolling(14).min().iloc[-1]) * 1.1
-
+            low = max(trade.open_rate * .9, df['low'].rolling(14).min().iloc[-1])
+            diff = (trade.open_rate - low) * 1.1
+            
             self.custom_info[pair] = {
                 'last_candle': last_candle,
                 'sl': trade.open_rate - diff,
