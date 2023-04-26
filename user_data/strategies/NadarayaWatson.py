@@ -29,7 +29,7 @@ class NadarayaWatson(IStrategy):
                         **kwargs) -> float:
         if self.wallets is None:
             return proposed_stake
-        return self.wallets.get_total_stake_amount() * .06
+        return self.wallets.get_total_stake_amount() * .1
 
     def populate_indicators(self, df: DataFrame, metadata: dict) -> DataFrame:
         df['kr'] = indicators.kernel_regression(df['close'], loop_back=24)
