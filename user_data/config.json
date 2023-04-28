@@ -6,7 +6,7 @@
   "stake_amount": 20,
   "tradable_balance_ratio": 1,
   "fiat_display_currency": "USD",
-  "dry_run": true,
+  "dry_run": false,
   "cancel_open_orders_on_exit": false,
   "trading_mode": "spot",
   "margin_mode": "",
@@ -62,7 +62,7 @@
   "pairlists": [
     {
       "method": "VolumePairList",
-      "number_assets": 20,
+      "number_assets": 40,
       "sort_key": "quoteVolume",
       "min_value": 0,
       "refresh_period": 3600,

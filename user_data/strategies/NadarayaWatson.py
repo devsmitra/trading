@@ -37,16 +37,20 @@ class NadarayaWatson(IStrategy):
         df['ema'] = ta.EMA(df, timeperiod=50)
         df['atr'] = ta.ATR(df, timeperiod=14)
         df['gr_atr'] = indicators.gaussian_regression(df['atr'], loop_back=8)
+        df['rsi'] = ta.RSI(df, timeperiod=14)
+        df['rsi_gr'] = indicators.gaussian_regression(df['rsi'], loop_back=2)
+        df['rsi_kr'] = indicators.kernel_regression(df['rsi'], loop_back=24)
         return df
 
     def populate_entry_trend(self, df: DataFrame, metadata: dict) -> DataFrame:
         pair = metadata['pair']
         df.loc[
             (
-                (df['close'].pct_change(periods=6) < 0.1) &
+                (df['close'].pct_change(periods=12) < 0.2) &
                 (df['close'].pct_change(periods=2) < 0.05) &
+                (df['atr'] > df['gr_atr']) &
+                (df['rsi_gr'] > df['rsi_kr']) &
                 (df['gr'].shift(1) < df['gr']) &
-                (df['gr_atr'].shift(1) < df['gr_atr']) &
                 (
                     (
                         (df['close'] > df['ema']) &
@@ -82,12 +86,9 @@ class NadarayaWatson(IStrategy):
         if pair not in self.custom_info:
             df, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
             last_candle = df.iloc[-1].squeeze()
-            # ATR stoploss
-            # diff = last_candle['atr'] * self.sl
-
             # Swing Low Stoploss
             low = max(trade.open_rate * .9, df['low'].rolling(14).min().iloc[-1])
-            diff = (trade.open_rate - low) * 1.1
+            diff = (trade.open_rate - low) * 1.2
 
             self.custom_info[pair] = {
                 'last_candle': last_candle,
@@ -119,7 +120,6 @@ class NadarayaWatson(IStrategy):
             candle['sl'] = candle['open_rate'] - (candle['diff'] * 0.9)
 
         return get_percent(current_rate, candle['sl'])
-
 
     @property
     def protections(self):
